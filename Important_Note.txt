@@ -1,1 +1,1 @@
-You have to change the column name in the code before running the code, than run it in the streamlit interface using command "Streamlit run filename.py"
+Before running the code, make sure to update the column names in the script. Then, execute the code in the Streamlit interface by using the command streamlit run filename.py"
