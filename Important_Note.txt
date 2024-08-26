@@ -1,0 +1,1 @@
+You have to change the column name in the code before running the code, than run it in the streamlit interface using command "Streamlit run filename.py"
