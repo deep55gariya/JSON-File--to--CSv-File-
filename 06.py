@@ -52,7 +52,7 @@ def json_to_csv_rows(json_data):
         replace_blank_with_zero(decode_unicode(education_details)),
         replace_blank_with_zero(decode_unicode(skills)),
         replace_blank_with_zero(decode_unicode(clean_multiline_field(json_data.get("About company", "")).replace("About company\n", ""))),
-        years  # Add years to the CSV row
+        replace_blank_with_zero(decode_unicode(clean_multiline_field(json_data.get("Job description", "")).replace("Job Title:", ""))),  # Add years to the CSV row
     ]
     
     return csv_row
@@ -85,7 +85,7 @@ columns = [
     "Title", "Company name", "Job location", "Work experience", "Portal link", 
     "job listing link", "Company's Rating", "No. of openings", "Applicants", 
     "Job_posting_date", "Minimum salary", "Maximum salary", "Average salary", 
-    "Benefits", "Role", "Education details", "Skills", "About company", "Years"
+    "Benefits", "Role", "Education details", "Skills", "About company", "Job description"
 ]
 
 if uploaded_files:
