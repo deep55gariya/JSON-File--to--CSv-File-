@@ -1,1 +1,13 @@
-Before running the code, make sure to update the column names in the script. Then, execute the code in the Streamlit interface by using the command streamlit run filename.py"
+How to Use It:
+Enter the Number of Columns:
+
+Input how many columns your CSV file should have.
+Provide Column Names:
+
+Give a name for each column that matches the data in your JSON files.
+Upload JSON Files(you can upload multiple JSON file also):
+
+Upload the JSON files you want to convert.
+Download Your CSV File:
+
+Click the download button to save the CSV file with all the combined data.
