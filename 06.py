@@ -3,8 +3,12 @@ import json
 import csv
 import io
 
-# Function to clean and format multiline fields
+# Function to clean and format multiline fields or lists
 def clean_multiline_field(text):
+    if isinstance(text, list):
+        # If the text is a list, join the list items into a single string separated by commas
+        text = ', '.join(text)
+    # Replace newlines with " | " if any multiline text is present
     return text.replace("\n", " | ") if text else ""
 
 # Function to replace empty fields with 0
@@ -18,42 +22,16 @@ def decode_unicode(text):
     return text.encode('utf-8').decode('unicode_escape')
 
 # Function to convert JSON data to CSV rows
-def json_to_csv_rows(json_data):
-    # Extract and clean multiline fields
-    others = json_data.get("Others", [""])
-    role = ""
-    for item in others:
-        if item.startswith("Role: "):
-            role = clean_multiline_field(item)
-    
-    education_details = clean_multiline_field(', '.join(json_data.get("Education details", [])))
-    skills = clean_multiline_field(', '.join(json_data.get("Skills", [])))
-
-    # Extract the years from the JSON data
-    years = replace_blank_with_zero(decode_unicode(json_data.get("Years", "")))
-
-    # Prepare data row
-    csv_row = [
-        replace_blank_with_zero(decode_unicode(json_data.get("Title", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Company name", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Job location", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Work experience", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Portal link", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("job listing link", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Company's Rating", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("No. of openings", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Applicants", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Job_posting_date", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Minimum salary", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Maximum salary", ""))),
-        replace_blank_with_zero(decode_unicode(json_data.get("Average salary", ""))),
-        replace_blank_with_zero(decode_unicode(', '.join(json_data.get("Benefits", [])))),
-        replace_blank_with_zero(decode_unicode(role)),
-        replace_blank_with_zero(decode_unicode(education_details)),
-        replace_blank_with_zero(decode_unicode(skills)),
-        replace_blank_with_zero(decode_unicode(clean_multiline_field(json_data.get("About company", "")).replace("About company\n", ""))),
-        replace_blank_with_zero(decode_unicode(clean_multiline_field(json_data.get("Job description", "")).replace("Job Title:", ""))),  # Add years to the CSV row
-    ]
+def json_to_csv_rows(json_data, columns):
+    # Prepare a row with values in the order of the columns specified
+    csv_row = []
+    for column in columns:
+        # Extract the value for each column, and handle multiline or list data
+        value = json_data.get(column, "")
+        value = clean_multiline_field(value)
+        value = decode_unicode(value)
+        value = replace_blank_with_zero(value)
+        csv_row.append(value)
     
     return csv_row
 
@@ -66,29 +44,35 @@ def convert_multiple_json_to_csv(json_files, columns):
     writer.writerow(columns)
     
     for json_file in json_files:
-        json_data = json.load(json_file)
-        csv_rows = json_to_csv_rows(json_data)
-        writer.writerow(csv_rows)
+        try:
+            # Decode the file and load JSON data
+            json_data = json.load(io.TextIOWrapper(json_file, encoding='utf-8'))
+            csv_rows = json_to_csv_rows(json_data, columns)
+            writer.writerow(csv_rows)
+        except (json.JSONDecodeError, TypeError) as e:
+            st.error(f"Error processing file {json_file.name}: {e}")
     
     # Get the CSV content as bytes
     csv_output.seek(0)
     return csv_output.getvalue().encode('utf-8')
 
 # Streamlit App
-st.title("JSON to CSV Converter")
+st.title("Dynamic JSON to CSV Converter")
 
-# Multiple file upload
+# Step 1: Input number of columns
+num_columns = st.number_input("Enter the number of columns", min_value=1, step=1)
+
+# Step 2: Input the column names based on the number of columns specified
+columns = []
+for i in range(num_columns):
+    column_name = st.text_input(f"Enter name for column {i + 1}")
+    if column_name:
+        columns.append(column_name)
+
+# Step 3: Upload JSON files
 uploaded_files = st.file_uploader("Choose JSON files", type="json", accept_multiple_files=True)
 
-# Column names
-columns = [
-    "Title", "Company name", "Job location", "Work experience", "Portal link", 
-    "job listing link", "Company's Rating", "No. of openings", "Applicants", 
-    "Job_posting_date", "Minimum salary", "Maximum salary", "Average salary", 
-    "Benefits", "Role", "Education details", "Skills", "About company", "Job description"
-]
-
-if uploaded_files:
+if uploaded_files and columns:
     # Convert multiple JSON files to CSV
     csv_output = convert_multiple_json_to_csv(uploaded_files, columns)
     
@@ -100,4 +84,4 @@ if uploaded_files:
         mime="text/csv"
     )
 
-st.write("Upload multiple JSON files to combine them into a single CSV file.")
+st.write("Enter the number of columns, specify their names, and upload JSON files to combine them into a single CSV file.")
